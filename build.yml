@@ -1,0 +1,41 @@
+name: Build APK
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Unzip project
+        run: unzip -q project.zip -d proj
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: android-actions/setup-android@v3
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.9
+
+      - name: Download fonts
+        run: |
+          D=proj/app/src/main/assets/www/fonts
+          B=https://raw.githubusercontent.com/google/fonts/main/ofl
+          curl -fsSL -o $D/Bungee-Regular.ttf $B/bungee/Bungee-Regular.ttf || true
+          for w in Medium SemiBold Bold; do
+            curl -fsSL -o $D/BarlowCondensed-$w.ttf $B/barlowcondensed/BarlowCondensed-$w.ttf || true
+          done
+
+      - name: Build debug APK
+        run: cd proj && gradle assembleDebug --no-daemon
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crater-climb-apk
+          path: proj/app/build/outputs/apk/debug/app-debug.apk
